@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JourneyFrames - Ember</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://unpkg.com/ember-source/dist/ember.production.min.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script>
+      // Simple Ember-like app using Ember's global API (no build)
+      const App = Ember.Application.create({ rootElement: '#app' });
+
+      App.ApplicationController = Ember.Controller.extend({
+        files: Ember.A([]),
+        folderName: 'Not connected',
+        async loadRoot(){
+          const id = prompt('Enter Google Drive folder ID (parent)')
+          if (!id) return;
+          this.set('folderName', id)
+          const resp = await fetch('/api/drive/list?folderId='+encodeURIComponent(id))
+          const json = await resp.json()
+          this.set('files', Ember.A(json.files || []))
+        }
+      })
+
+      App.ApplicationTemplate = Ember.HTMLBars.compile(`
+        <div class="header">
+          <h1>JourneyFrames</h1>
+          <button {{action "loadRoot"}}>Connect Drive Folder</button>
+        </div>
+        <div class="hero">
+          <h2>Life is Better in <span class="accent">Motion</span></h2>
+        </div>
+        <div class="grid">
+          {{#each this.files as |f|}}
+            <div class="folder">
+              <div class="thumb">{{if (eq f.mimeType 'application/vnd.google-apps.folder') '📁' '🖼️'}}</div>
+              <div class="name">{{f.name}}</div>
+            </div>
+          {{/each}}
+        </div>
+      `)
+    </script>
+  </body>
+  </html>
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JourneyFrames</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

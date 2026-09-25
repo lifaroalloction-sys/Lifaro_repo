@@ -1,0 +1,10 @@
+:root{--bg:#081022;--card:#0f1724aa;--accent1:#6ee7ff;--accent2:#7c3aed}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#041022 0%, #081326 60%);color:#e6eef8}
+.header{display:flex;align-items:center;justify-content:space-between;padding:20px}
+.hero{padding:40px}
+.accent{background:linear-gradient(90deg,var(--accent1),var(--accent2));-webkit-background-clip:text;color:transparent}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;padding:20px}
+.folder{background:var(--card);padding:16px;border-radius:12px}
+.thumb{font-size:36px}
+.name{margin-top:8px;font-weight:600}
