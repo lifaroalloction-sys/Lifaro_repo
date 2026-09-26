@@ -11,6 +11,10 @@ import com.google.auth.oauth2.GoogleCredentials;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.CrossOrigin;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.FileInputStream;
 import java.util.Collections;
@@ -57,5 +61,36 @@ public class DriveController {
         }).collect(Collectors.toList());
 
         return Collections.singletonMap("files", out);
+    }
+
+    @CrossOrigin
+    @GetMapping("/api/drive/media/{fileId}")
+    public void media(@PathVariable String fileId, HttpServletResponse response) throws Exception {
+        String credPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+        if (credPath == null || credPath.isEmpty()) {
+            response.setStatus(500);
+            response.getWriter().write("GOOGLE_APPLICATION_CREDENTIALS env var not set");
+            return;
+        }
+
+        GoogleCredentials creds;
+        try (java.io.FileInputStream fis = new java.io.FileInputStream(credPath)){
+            creds = GoogleCredentials.fromStream(fis).createScoped(Collections.singleton(DriveScopes.DRIVE_READONLY));
+        }
+
+        Drive drive = new Drive.Builder(GoogleNetHttpTransport.newTrustedTransport(), JacksonFactory.getDefaultInstance(), new HttpCredentialsAdapter(creds))
+                .setApplicationName("JourneyFrames")
+                .build();
+
+        // get mime type
+        File meta = drive.files().get(fileId).setFields("mimeType,name").execute();
+        String mime = meta.getMimeType();
+        if (mime == null) mime = "application/octet-stream";
+        response.setContentType(mime);
+
+        // stream media through the server
+        try (java.io.OutputStream out = response.getOutputStream()){
+            drive.files().get(fileId).executeMediaAndDownloadTo(out);
+        }
     }
 }
