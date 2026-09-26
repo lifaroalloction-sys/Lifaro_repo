@@ -89,6 +89,8 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
         v.addEventListener('play', onPlay)
         v.addEventListener('pause', onPause)
         obs.observe(v)
+        // diagnostic log
+        console.debug('[reel] observing video', v.src, 'muted=', v.muted)
       })
 
       return () => {
@@ -128,6 +130,9 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
       viewport.addEventListener('touchstart', onTouchStart, { passive: true })
       viewport.addEventListener('touchend', onTouchEnd, { passive: true })
       viewport.addEventListener('wheel', onWheelLocal, { passive: true })
+
+      // diagnostic
+      console.debug('[reel] touch/wheel handlers attached')
 
       return () => {
         viewport.removeEventListener('touchstart', onTouchStart)
@@ -361,4 +366,11 @@ export default function PostGrid() {
       )}
     </>
   )
+}
+
+// Diagnostic: expose a function to inspect current video sources in dev console
+if (typeof window !== 'undefined') {
+  window.__reel_inspect = function() {
+    return Array.from(document.querySelectorAll('video.reel-video')).map(v => ({ src: v.src, muted: v.muted, playing: !v.paused }))
+  }
 }
