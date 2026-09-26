@@ -11,18 +11,10 @@
 
   <post>
     <id>1</id>
-    <title>My First Journey</title>
-    <url>https://example.com/posts/first-journey</url>
-    <date>2026-09-26</date>
-    <summary>Kickoff: sharing early travel photos and videos.</summary>
-  </post>
-
-  <post>
-    <id>2</id>
-    <title>Pohot (Drive Upload)</title>
-    <url>https://drive.google.com/file/d/1MFcGN82jgIT2sltigoxI7Zpj3ixCEZck/view?usp=drive_link</url>
-    <date>2006-01-26</date>
-    <summary>User-submitted photo from Drive.</summary>
+    <title>1st post</title>
+    <url>https://drive.google.com/file/d/1MFcGN82jgIT2sltigoxI7Zpj3ixCEZck/view?usp=sharing</url>
+    <date>27/3/2026</date>
+    <about>1st post</about>
   </post>
 
 </posts>

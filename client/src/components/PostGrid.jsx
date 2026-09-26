@@ -61,7 +61,10 @@ export default function PostGrid() {
   useEffect(() => {
     const loadPosts = async () => {
       try {
-        const res = await fetch('/posts.xml')
+        const baseUrl = import.meta.env.BASE_URL || '/'
+        const res = await fetch(`${baseUrl}posts.xml`, { cache: 'no-store' })
+        if (!res.ok) throw new Error(`Failed to fetch posts.xml: ${res.status}`)
+
         const xml = await res.text()
         const doc = new DOMParser().parseFromString(xml, 'application/xml')
         const nodes = [...doc.querySelectorAll('post')]
@@ -70,7 +73,10 @@ export default function PostGrid() {
           .map((postNode) => {
             const url = postNode.querySelector('url')?.textContent?.trim() || ''
             const date = postNode.querySelector('date')?.textContent?.trim() || ''
-            const about = postNode.querySelector('about')?.textContent?.trim() || ''
+            const about =
+              postNode.querySelector('about')?.textContent?.trim() ||
+              postNode.querySelector('summary')?.textContent?.trim() ||
+              ''
             if (!url) return null
             return { url, date, about }
           })
