@@ -168,8 +168,15 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
         // prefer direct file URL if available, otherwise try the preview src
         video.src = it.file || it.src
 
-        // replace poster with video element
-        posterEl.replaceWith(video)
+          // keep a backup of the poster so we can restore it if playback fails
+          const posterBackup = posterEl.cloneNode(true)
+          posterEl.replaceWith(video)
+
+          // ensure video fills the item like the poster did
+          video.style.width = '100%'
+          video.style.height = '100vh'
+          video.style.objectFit = 'cover'
+          video.style.background = 'transparent'
 
         video.addEventListener('click', () => {
           if (video.muted) {
@@ -189,11 +196,27 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
         // the promise will reject and we'll show an inline hint.
         await video.play()
       } catch (err) {
-        const hint = document.createElement('div')
-        hint.className = 'reel-play-error'
-        hint.textContent = 'Playback not available in-app'
-        // avoid duplicating hint
-        if (!posterEl.querySelector('.reel-play-error')) posterEl.appendChild(hint)
+        // playback failed — restore the poster backup and show hint
+        try {
+          const parent = posterEl.parentNode || (reelRef && reelRef.current && reelRef.current.querySelector('.reel-viewport'))
+          if (parent) {
+            const itemsList = parent.querySelectorAll('.reel-item')
+            const currentEl = itemsList[clickIdx]
+            if (currentEl) {
+              const existingVideo = currentEl.querySelector('video.reel-video')
+              if (existingVideo && existingVideo.parentNode) existingVideo.parentNode.replaceChild(posterBackup, existingVideo)
+              // attach a hint to the poster
+              if (!posterBackup.querySelector('.reel-play-error')) {
+                const hint = document.createElement('div')
+                hint.className = 'reel-play-error'
+                hint.textContent = 'Playback not available in-app'
+                posterBackup.appendChild(hint)
+              }
+            }
+          }
+        } catch (e) {
+          // ignore restore errors
+        }
       }
     }
 
