@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 
 export default function Profile(){
-  const avatarUrl = 'https://drive.google.com/file/d/1cUwQjkqJ6xBofRbKDAqkzCKJbIMef3lo/view?usp=sharing'
+  const avatarUrl = 'https://drive.google.com/thumbnail?id=1cUwQjkqJ6xBofRbKDAqkzCKJbIMef3lo&sz=w800'
   const [open, setOpen] = useState(false)
 
   return (
