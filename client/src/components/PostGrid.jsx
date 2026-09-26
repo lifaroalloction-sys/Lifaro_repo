@@ -145,78 +145,19 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
     }, [index, reelRef])
 
     // play poster inline by replacing poster with a video element
-    const playInline = async (clickIdx) => {
+    const playInline = (clickIdx) => {
       const viewport = reelRef && reelRef.current ? reelRef.current.querySelector('.reel-viewport') : document.querySelector('.reel-viewport')
       if (!viewport) return
       const itemEl = viewport.querySelectorAll('.reel-item')[clickIdx]
       if (!itemEl) return
       const posterEl = itemEl.querySelector('.reel-poster')
       if (!posterEl) return
-      // prevent double-insert
-      if (itemEl.querySelector('video.reel-video')) return
-
-      const it = items[clickIdx]
-      const video = document.createElement('video')
-      video.className = 'reel-video'
-      video.setAttribute('playsinline', '')
-      video.setAttribute('webkit-playsinline', '')
-      video.muted = true
-      video.controls = false
-      video.preload = 'auto'
-
-      try {
-        // prefer direct file URL if available, otherwise try the preview src
-        video.src = it.file || it.src
-
-          // keep a backup of the poster so we can restore it if playback fails
-          const posterBackup = posterEl.cloneNode(true)
-          posterEl.replaceWith(video)
-
-          // ensure video fills the item like the poster did
-          video.style.width = '100%'
-          video.style.height = '100vh'
-          video.style.objectFit = 'cover'
-          video.style.background = 'transparent'
-
-        video.addEventListener('click', () => {
-          if (video.muted) {
-            video.muted = false
-            video.controls = true
-            video.play().catch(() => {})
-          } else {
-            video.muted = true
-            video.controls = false
-          }
-        })
-
-        video.addEventListener('play', () => video.classList.add('is-playing'))
-        video.addEventListener('pause', () => video.classList.remove('is-playing'))
-
-        // attempt to play; if the browser blocks or the URL isn't a playable media resource,
-        // the promise will reject and we'll show an inline hint.
-        await video.play()
-      } catch (err) {
-        // playback failed — restore the poster backup and show hint
-        try {
-          const parent = posterEl.parentNode || (reelRef && reelRef.current && reelRef.current.querySelector('.reel-viewport'))
-          if (parent) {
-            const itemsList = parent.querySelectorAll('.reel-item')
-            const currentEl = itemsList[clickIdx]
-            if (currentEl) {
-              const existingVideo = currentEl.querySelector('video.reel-video')
-              if (existingVideo && existingVideo.parentNode) existingVideo.parentNode.replaceChild(posterBackup, existingVideo)
-              // attach a hint to the poster
-              if (!posterBackup.querySelector('.reel-play-error')) {
-                const hint = document.createElement('div')
-                hint.className = 'reel-play-error'
-                hint.textContent = 'Playback not available in-app'
-                posterBackup.appendChild(hint)
-              }
-            }
-          }
-        } catch (e) {
-          // ignore restore errors
-        }
+      if (!posterEl.querySelector('.reel-play-error')) {
+        const hint = document.createElement('div')
+        hint.className = 'reel-play-error'
+        hint.textContent = 'Playback not supported in-app on mobile.'
+        posterEl.appendChild(hint)
+        setTimeout(() => { if (hint && hint.parentNode) hint.parentNode.removeChild(hint) }, 2200)
       }
     }
 
