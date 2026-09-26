@@ -44,13 +44,17 @@ public class DriveController {
         FileList result = drive.files().list().setQ(q).setFields("files(id,name,mimeType,thumbnailLink,webViewLink)").execute();
         List<File> files = result.getFiles();
 
-        List<Object> out = files.stream().map(f -> Collections.unmodifiableMap(java.util.Map.of(
+        List<Object> out = files.stream().map(f -> {
+            String direct = String.format("https://drive.google.com/uc?export=view&id=%s", f.getId());
+            return Collections.unmodifiableMap(java.util.Map.of(
                 "id", f.getId(),
                 "name", f.getName(),
                 "mimeType", f.getMimeType(),
                 "thumbnailLink", f.getThumbnailLink(),
-                "webViewLink", f.getWebViewLink()
-        ))).collect(Collectors.toList());
+                "webViewLink", f.getWebViewLink(),
+                "directLink", direct
+            ));
+        }).collect(Collectors.toList());
 
         return Collections.singletonMap("files", out);
     }
