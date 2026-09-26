@@ -4,30 +4,12 @@ import PostGrid from './PostGrid'
 
 export default function InstagramLayout(){
   return (
-    <div className="ig-app">
-      <aside className="ig-sidebar">
-        <div className="ig-logo">Instagram</div>
-        <nav className="ig-nav">
-          <a>Home</a>
-          <a>Search</a>
-          <a>Explore</a>
-          <a>Reels</a>
-          <a>Messages</a>
-        </nav>
-      </aside>
-
-      <main className="ig-main">
-        <div className="ig-topbar">
-          <div className="ig-top-left">Instagram</div>
-          <div className="ig-top-right">🔍 ⬜ ❤️ <span className="tiny-avatar"/></div>
-        </div>
-
-        <div className="ig-content">
+    <div className="ig-app simple">
+      <main className="ig-main simple">
+        <div className="ig-content simple">
           <Profile />
-          <div className="ig-tabs">
+          <div className="ig-tabs simple">
             <button className="tab active">POSTS</button>
-            <button className="tab">REELS</button>
-            <button className="tab">TAGGED</button>
           </div>
           <PostGrid />
         </div>
