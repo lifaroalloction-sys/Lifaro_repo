@@ -101,8 +101,9 @@ function UploadModal({onClose,onAdd}){
       let fileId = null
       try{ fileId = extractDriveFileId(url) }catch(e){fileId=null}
       if(fileId){
-        // use server proxy to avoid CORS/auth issues
-        const proxy = `/api/drive/media/${fileId}`
+        // allow configuring backend base URL via Vite env
+        const API_BASE = import.meta.env.VITE_API_BASE || ''
+        const proxy = `${API_BASE}/api/drive/media/${fileId}`
         // try image
         await new Promise((res)=>{
           const img = new Image()
@@ -120,6 +121,27 @@ function UploadModal({onClose,onAdd}){
           videoTest.onloadedmetadata = ()=>{ if(!done){ done=true; clearTimeout(to); setPreviewSrc(proxy); setPreviewType('video'); res() } }
           videoTest.onerror = ()=>{ if(!done){ done=true; clearTimeout(to); res() } }
           videoTest.src = proxy
+        })
+        if(previewSrc){ setChecking(false); return }
+
+        // if proxy returned 404 or backend not reachable, fall back to public Drive view link
+        // construct uc view URL
+        const publicUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
+        await new Promise((res)=>{
+          const img2 = new Image()
+          img2.onload = ()=>{ setPreviewSrc(publicUrl); setPreviewType('image'); res() }
+          img2.onerror = ()=>{ res() }
+          img2.src = publicUrl
+        })
+        if(previewSrc){ setChecking(false); return }
+        // try video from public URL
+        const videoTest2 = document.createElement('video')
+        await new Promise((res)=>{
+          let done=false
+          const to= setTimeout(()=>{ if(!done){ done=true; res() } },3000)
+          videoTest2.onloadedmetadata = ()=>{ if(!done){ done=true; clearTimeout(to); setPreviewSrc(publicUrl); setPreviewType('video'); res() } }
+          videoTest2.onerror = ()=>{ if(!done){ done=true; clearTimeout(to); res() } }
+          videoTest2.src = publicUrl
         })
         if(previewSrc){ setChecking(false); return }
       }
