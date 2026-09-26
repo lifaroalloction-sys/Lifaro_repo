@@ -174,7 +174,7 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
                     (it.file && !it.file.includes('drive.google.com/uc')) ? (
                       <video
                         className="reel-video"
-                        src={it.file}
+                        src={it.proxy || it.file}
                         poster={it.thumbnail}
                         loop
                         playsInline
@@ -284,10 +284,14 @@ export default function PostGrid() {
             const mediaType = type === 'video' ? 'video' : 'image'
             const thumbnail = toImageSrc(url)
             if (mediaType === 'video') {
+              const driveId = getDriveFileId(url)
+              const apiBase = import.meta.env.VITE_API_BASE || ''
+              const proxy = driveId ? `${apiBase}api/drive/media/${driveId}` : toVideoFileUrl(url)
               return {
                 url,
                 src: toVideoEmbedUrl(url),
                 file: toVideoFileUrl(url),
+                proxy,
                 thumbnail,
                 type: 'video',
                 date,
