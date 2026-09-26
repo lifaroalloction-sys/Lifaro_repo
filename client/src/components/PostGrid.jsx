@@ -158,35 +158,19 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
       const it = items[clickIdx]
       const video = document.createElement('video')
       video.className = 'reel-video'
-      video.playsInline = true
+      video.setAttribute('playsinline', '')
+      video.setAttribute('webkit-playsinline', '')
       video.muted = true
       video.controls = false
       video.preload = 'auto'
 
       try {
-        if (it.file) {
-          // try to fetch file as blob (may fail due to CORS)
-          const res = await fetch(it.file, { method: 'GET', mode: 'cors' })
-          if (res.ok) {
-            const contentType = res.headers.get('content-type') || ''
-            if (contentType.startsWith('video')) {
-              const blob = await res.blob()
-              video.src = URL.createObjectURL(blob)
-            } else {
-              video.src = it.file
-            }
-          } else {
-            video.src = it.file
-          }
-        } else {
-          // try direct src (preview) — may not work, but attempt
-          video.src = it.src
-        }
+        // prefer direct file URL if available, otherwise try the preview src
+        video.src = it.file || it.src
 
         // replace poster with video element
         posterEl.replaceWith(video)
 
-        // autoplay muted when inserted; user can tap to unmute (handled by click handler on video)
         video.addEventListener('click', () => {
           if (video.muted) {
             video.muted = false
@@ -200,13 +184,16 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
 
         video.addEventListener('play', () => video.classList.add('is-playing'))
         video.addEventListener('pause', () => video.classList.remove('is-playing'))
-        video.play().catch(() => {})
+
+        // attempt to play; if the browser blocks or the URL isn't a playable media resource,
+        // the promise will reject and we'll show an inline hint.
+        await video.play()
       } catch (err) {
-        // show inline hint when playback not possible
         const hint = document.createElement('div')
         hint.className = 'reel-play-error'
         hint.textContent = 'Playback not available in-app'
-        posterEl.appendChild(hint)
+        // avoid duplicating hint
+        if (!posterEl.querySelector('.reel-play-error')) posterEl.appendChild(hint)
       }
     }
 
