@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<posts>
+  <!--
+    Add post entries below. Each entry should include:
+      - id: unique identifier
+      - title: post title
+      - url: public URL where the post/media is available
+      - date: ISO 8601 date (YYYY-MM-DD or full datetime)
+      - summary: short description (optional)
+  -->
+
+  <post>
+    <id>1</id>
+    <title>My First Journey</title>
+    <url>https://example.com/posts/first-journey</url>
+    <date>2026-09-26</date>
+    <summary>Kickoff: sharing early travel photos and videos.</summary>
+  </post>
+
+</posts>
