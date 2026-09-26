@@ -54,6 +54,13 @@ body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:var(-
 .reel-frame{width:100%;height:100%;border:0}
 .reel-play-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;background:rgba(0,0,0,0.4);padding:8px 12px;border-radius:20px;font-size:16px}
 
+/* when HTML5 video is playing, hide overlay hints */
+video.reel-video{transition:opacity 200ms ease}
+video.reel-video.is-playing{opacity:1}
+.reel-iframe-wrap .reel-play-hint{display:none}
+.reel-item .reel-play-overlay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}
+.reel-item{position:relative}
+
 /* Profile modal full view */
 .profile-modal{position:fixed;inset:0;background:rgba(0,0,0,0.98);display:flex;align-items:center;justify-content:center;z-index:1000}
 .profile-modal-inner{position:relative;width:100%;max-width:420px;padding:28px;border-radius:12px;background:transparent;display:flex;align-items:center;justify-content:center}

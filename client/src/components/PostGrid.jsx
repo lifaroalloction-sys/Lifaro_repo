@@ -45,17 +45,35 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
   }
 
   if (mobileReel) {
-    // autoplay/pause via IntersectionObserver
+    // autoplay/pause via IntersectionObserver and attach click handlers
     useEffect(() => {
       const viewport = reelRef && reelRef.current ? reelRef.current.querySelector('.reel-viewport') : document.querySelector('.reel-viewport')
       if (!viewport) return
       const videos = () => Array.from(viewport.querySelectorAll('video.reel-video'))
+
+      const onVideoClick = (ev) => {
+        const v = ev.currentTarget
+        if (v.muted) {
+          v.muted = false
+          v.controls = true
+          v.play().catch(() => {})
+        } else {
+          v.muted = true
+          v.controls = false
+        }
+      }
+
+      const onPlay = (e) => e.currentTarget.classList.add('is-playing')
+      const onPause = (e) => e.currentTarget.classList.remove('is-playing')
 
       const obs = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           const el = entry.target
           if (el.tagName.toLowerCase() !== 'video') return
           if (entry.intersectionRatio >= 0.6) {
+            // play muted so autoplay is allowed
+            el.muted = true
+            el.controls = false
             el.play().catch(() => {})
           } else {
             el.pause()
@@ -63,8 +81,24 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
         })
       }, { threshold: [0.6] })
 
-      videos().forEach(v => obs.observe(v))
-      return () => obs.disconnect()
+      videos().forEach(v => {
+        // ensure initial state
+        v.muted = true
+        v.controls = false
+        v.addEventListener('click', onVideoClick)
+        v.addEventListener('play', onPlay)
+        v.addEventListener('pause', onPause)
+        obs.observe(v)
+      })
+
+      return () => {
+        videos().forEach(v => {
+          v.removeEventListener('click', onVideoClick)
+          v.removeEventListener('play', onPlay)
+          v.removeEventListener('pause', onPause)
+        })
+        obs.disconnect()
+      }
     }, [items, reelRef])
 
     // handle wheel and touch to change index
