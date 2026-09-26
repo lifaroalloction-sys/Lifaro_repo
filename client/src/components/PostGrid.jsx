@@ -180,7 +180,28 @@ function UploadModal({ onClose, onAdd }){
             setError('Drive returned 403: file is not publicly shared. Run or deploy the backend and set VITE_API_BASE to preview private files.')
             setChecking(false); return
           }
-        }catch(e){ /* ignore */ }
+          }catch(e){ /* ignore */ }
+
+        // If public URL failed (403) and we have a Google API key, try Drive REST API as a fallback
+        const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || ''
+        if(API_KEY){
+          try{
+            const driveApi = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`
+            const r3 = await fetch(driveApi, { method: 'GET' })
+            if(r3.ok){
+              const ct3 = (r3.headers.get('content-type')||'').toLowerCase()
+              const blob3 = await r3.blob()
+              const url3 = URL.createObjectURL(blob3)
+              if(ct3.startsWith('image/')){ setPreviewSrc(url3); setPreviewType('image'); setChecking(false); return }
+              if(ct3.startsWith('video/')){ setPreviewSrc(url3); setPreviewType('video'); setChecking(false); return }
+            } else if(r3.status === 403){
+              setError('Drive API returned 403. The file may not be publicly shared or API key is restricted.')
+              setChecking(false); return
+            }
+          }catch(err){
+            // ignore and fall through
+          }
+        }
       } else {
         // non-Drive URL - try as direct media URL
         try{
