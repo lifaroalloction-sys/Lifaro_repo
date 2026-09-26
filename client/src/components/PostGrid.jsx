@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react'
 
-function PostTile({ src, alt, onOpen }){
+function PostTile({ item, onOpen }) {
+  const src = item.type === 'video' ? item.thumbnail : item.src
+
   return (
     <div className="post-tile" onClick={onOpen} role="button" tabIndex={0}>
-      <img src={src} alt={alt} />
+      {item.type === 'video' ? <video src={item.src} poster={src} muted playsInline /> : <img src={src} alt={item.about || 'post'} />}
     </div>
   )
 }
@@ -33,13 +35,19 @@ function PostModal({ items, current, onClose }){
     else if (e.deltaY < -20) { prev(); wheelTime.current = now }
   }
 
+  const item = items[index]
+
   return (
     <div className="modal" onClick={onClose} onWheel={onWheel}>
       <div className="modal-inner" onClick={e => e.stopPropagation()}>
         <button className="modal-close" onClick={onClose}>✕</button>
         <button className="modal-nav left" onClick={prev}>‹</button>
         <div className="modal-media">
-          <img src={items[index]} alt={`post-${index}`} />
+          {item.type === 'video' ? (
+            <video src={item.src} controls autoPlay playsInline style={{ maxWidth: '100%', maxHeight: '75vh', display: 'block' }} />
+          ) : (
+            <img src={item.src} alt={item.about || 'post'} style={{ maxWidth: '100%', maxHeight: '75vh', display: 'block' }} />
+          )}
         </div>
         <button className="modal-nav right" onClick={next}>›</button>
       </div>
@@ -47,10 +55,26 @@ function PostModal({ items, current, onClose }){
   )
 }
 
+function getDriveFileId(url) {
+  if (!url) return ''
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
+  if (match) return match[1]
+  const queryMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
+  if (queryMatch) return queryMatch[1]
+  return ''
+}
+
 function toImageSrc(url) {
   if (!url) return ''
-  const driveIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
-  if (driveIdMatch) return `https://drive.google.com/thumbnail?id=${driveIdMatch[1]}&sz=w1200`
+  const driveId = getDriveFileId(url)
+  if (driveId) return `https://drive.google.com/thumbnail?id=${driveId}&sz=w1200`
+  return url
+}
+
+function toVideoSrc(url) {
+  if (!url) return ''
+  const driveId = getDriveFileId(url)
+  if (driveId) return `https://drive.google.com/uc?export=download&id=${driveId}`
   return url
 }
 
@@ -73,16 +97,25 @@ export default function PostGrid() {
           .map((postNode) => {
             const url = postNode.querySelector('url')?.textContent?.trim() || ''
             const date = postNode.querySelector('date')?.textContent?.trim() || ''
+            const type = (postNode.querySelector('type')?.textContent?.trim() || '').toLowerCase()
             const about =
               postNode.querySelector('about')?.textContent?.trim() ||
               postNode.querySelector('summary')?.textContent?.trim() ||
               ''
             if (!url) return null
-            return { url, date, about }
+            const mediaType = type === 'video' ? 'video' : 'image'
+            return {
+              url,
+              src: mediaType === 'video' ? toVideoSrc(url) : toImageSrc(url),
+              thumbnail: toImageSrc(url),
+              type: mediaType,
+              date,
+              about,
+            }
           })
           .filter(Boolean)
 
-        setItems(posts.map((post) => toImageSrc(post.url)))
+        setItems(posts)
       } catch (err) {
         setItems([])
       }
@@ -95,8 +128,8 @@ export default function PostGrid() {
     <>
       <section className="post-grid">
         {items.length === 0 && <div style={{ gridColumn: '1/-1', color: '#666' }}>No posts yet.</div>}
-        {items.map((src, i) => (
-          <PostTile key={i} src={src} alt={`post-${i}`} onOpen={() => setOpenIndex(i)} />
+        {items.map((item, i) => (
+          <PostTile key={i} item={item} onOpen={() => setOpenIndex(i)} />
         ))}
       </section>
 
