@@ -225,8 +225,7 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
             <iframe
               src={item.src}
               title={item.about || 'Video post'}
-              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-              allowFullScreen
+              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
               className="video-frame"
             />
           ) : (
