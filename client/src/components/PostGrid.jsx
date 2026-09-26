@@ -106,65 +106,65 @@ function UploadModal({onClose,onAdd}){
         const proxy = `${API_BASE}/api/drive/media/${fileId}`
         // try image
         await new Promise((res)=>{
-          const img = new Image()
-          img.crossOrigin = 'anonymous'
-          img.onload = ()=>{ setPreviewSrc(proxy); setPreviewType('image'); res() }
-          img.onerror = ()=>{ res() }
-          img.src = proxy
-        })
-        if(previewSrc) { setChecking(false); return }
-        // try video
-        const videoTest = document.createElement('video')
-        await new Promise((res)=>{
-          let done=false
-          const to= setTimeout(()=>{ if(!done){ done=true; res() } },3000)
-          videoTest.onloadedmetadata = ()=>{ if(!done){ done=true; clearTimeout(to); setPreviewSrc(proxy); setPreviewType('video'); res() } }
-          videoTest.onerror = ()=>{ if(!done){ done=true; clearTimeout(to); res() } }
-          videoTest.src = proxy
-        })
-        if(previewSrc){ setChecking(false); return }
+          if(fileId){
+            const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+            const proxy = API_BASE ? `${API_BASE}/api/drive/media/${fileId}` : `/api/drive/media/${fileId}`
 
-        // if proxy returned 404 or backend not reachable, fall back to public Drive view link
-        // construct uc view URL
-        const publicUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
-        await new Promise((res)=>{
-          const img2 = new Image()
-          img2.onload = ()=>{ setPreviewSrc(publicUrl); setPreviewType('image'); res() }
-          img2.onerror = ()=>{ res() }
-          img2.src = publicUrl
-        })
-        if(previewSrc){ setChecking(false); return }
-        // try video from public URL
-        const videoTest2 = document.createElement('video')
-        await new Promise((res)=>{
-          let done=false
-          const to= setTimeout(()=>{ if(!done){ done=true; res() } },3000)
-          videoTest2.onloadedmetadata = ()=>{ if(!done){ done=true; clearTimeout(to); setPreviewSrc(publicUrl); setPreviewType('video'); res() } }
-          videoTest2.onerror = ()=>{ if(!done){ done=true; clearTimeout(to); res() } }
-          videoTest2.src = publicUrl
-        })
-        if(previewSrc){ setChecking(false); return }
-      }
+            // probe the proxy using fetch so we can inspect HTTP status and content-type
+            try{
+              const resp = await fetch(proxy, { method: 'GET' })
+              if(resp.ok){
+                const ct = (resp.headers.get('content-type')||'').toLowerCase()
+                if(ct.startsWith('image/')){ setPreviewSrc(proxy); setPreviewType('image'); setChecking(false); return }
+                if(ct.startsWith('video/')){ setPreviewSrc(proxy); setPreviewType('video'); setChecking(false); return }
+                // unknown type -> create blob URL and inspect
+                const blob = await resp.blob()
+                const blobUrl = URL.createObjectURL(blob)
+                if(blob.type.startsWith('image/')){ setPreviewSrc(blobUrl); setPreviewType('image'); setChecking(false); return }
+                if(blob.type.startsWith('video/')){ setPreviewSrc(blobUrl); setPreviewType('video'); setChecking(false); return }
+              } else if(resp.status === 404){
+                // backend not serving this path — fall through to public fallback below
+              } else if(resp.status === 403){
+                setError('Backend returned 403 Forbidden. Check service account permissions or backend CORS settings.')
+                setChecking(false)
+                return
+              } else {
+                setError(`Backend returned ${resp.status} ${resp.statusText}`)
+                setChecking(false)
+                return
+              }
+            }catch(err){
+              // network error / CORS / unreachable
+              const runningOnGithubPages = window.location.host.includes('github.io')
+              if(runningOnGithubPages && !API_BASE){
+                setError('Backend unreachable. On GitHub Pages you must set VITE_API_BASE to your deployed backend URL to preview private Drive files.')
+              } else {
+                setError('Could not reach backend proxy. Ensure the backend is running and CORS allows your site origin.')
+              }
+              setChecking(false)
+              return
+            }
 
-      // fallback: try loading the URL directly as image
-      await new Promise((res)=>{
-        const img = new Image()
-        img.onload = ()=>{ setPreviewSrc(url); setPreviewType('image'); res() }
-        img.onerror = ()=>{ res() }
-        img.src = url
-      })
-      if(previewSrc){ setChecking(false); return }
-
-      // try video tag directly
-      await new Promise((res)=>{
-        const v = document.createElement('video')
-        let done=false
-        const to= setTimeout(()=>{ if(!done){ done=true; res() } },3000)
-        v.onloadedmetadata = ()=>{ if(!done){ done=true; clearTimeout(to); setPreviewSrc(url); setPreviewType('video'); res() } }
-        v.onerror = ()=>{ if(!done){ done=true; clearTimeout(to); res() } }
-        v.src = url
-      })
-
+            // fallback to public Drive preview URL (works only for files shared publicly)
+            const publicUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
+            try{
+              const r2 = await fetch(publicUrl, { method: 'GET' })
+              if(r2.ok){
+                const ct2 = (r2.headers.get('content-type')||'').toLowerCase()
+                if(ct2.startsWith('image/')){ setPreviewSrc(publicUrl); setPreviewType('image'); setChecking(false); return }
+                if(ct2.startsWith('video/')){ setPreviewSrc(publicUrl); setPreviewType('video'); setChecking(false); return }
+                const blob2 = await r2.blob(); const burl2 = URL.createObjectURL(blob2)
+                if(blob2.type.startsWith('image/')){ setPreviewSrc(burl2); setPreviewType('image'); setChecking(false); return }
+                if(blob2.type.startsWith('video/')){ setPreviewSrc(burl2); setPreviewType('video'); setChecking(false); return }
+              } else if(r2.status === 403){
+                setError('Drive returned 403: file is not publicly shared. Run or deploy the backend and set VITE_API_BASE to preview private files.')
+                setChecking(false)
+                return
+              }
+            }catch(e){
+              // ignore and fall through
+            }
+          }
       if(!previewSrc){ setError('Unable to fetch media from the provided URL. If the URL is a Drive folder, the backend must be used.'); }
     }catch(e){ setError('Error while checking URL') }
     setChecking(false)
