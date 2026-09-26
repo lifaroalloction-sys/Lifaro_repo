@@ -1,4 +1,6 @@
 import React from 'react'
+import Profile from './components/Profile'
+import PostGrid from './components/PostGrid'
 
 function Header(){
   return (
@@ -58,7 +60,10 @@ export default function App(){
     <div>
       <Header />
       <Hero />
-      <Destinations />
+      <div className="container profile-area">
+        <Profile />
+        <PostGrid />
+      </div>
       <footer className="site-footer">
         <div>
           <h4>About JourneyFrames</h4>
