@@ -19,6 +19,7 @@ function PostTile({ item, onOpen }) {
 
 function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
   const [index, setIndex] = useState(current)
+  const [videoErrorIndex, setVideoErrorIndex] = useState(null)
   const wheelTime = useRef(0)
   useEffect(() => setIndex(current), [current])
   useEffect(() => {
@@ -225,14 +226,27 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
             // Prefer HTML5 <video> when we have a proxied or direct MP4 URL that is CORS-friendly.
             // Fallback to Drive preview iframe when only embed URL is available.
             (item.proxy || (item.file && !item.file.includes('drive.google.com/uc'))) ? (
-              <video
-                className="modal-video"
-                src={item.proxy || item.file || item.src}
-                poster={item.thumbnail}
-                controls
-                playsInline
-                preload="metadata"
-              />
+              (videoErrorIndex === index) ? (
+                <iframe
+                  src={item.src}
+                  title={item.about || 'Video post'}
+                  allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+                  className="video-frame"
+                />
+              ) : (
+                <video
+                  className="modal-video"
+                  src={item.proxy || item.file || item.src}
+                  poster={item.thumbnail}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  onError={(e) => {
+                    console.debug('[modal] video load error, falling back to iframe', e?.currentTarget?.src)
+                    setVideoErrorIndex(index)
+                  }}
+                />
+              )
             ) : (
               <iframe
                 src={item.src}
