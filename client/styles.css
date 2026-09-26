@@ -37,4 +37,17 @@ body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180de
 .post-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
 .post-tile img{width:100%;height:260px;object-fit:cover;display:block}
 
+/* Instagram-like layout */
+.ig-app{display:flex;min-height:100vh;background:#fff;color:#111}
+.ig-sidebar{width:220px;border-right:1px solid #e6e6e6;padding:24px}
+.ig-logo{font-family:Cambria,serif;font-weight:700;margin-bottom:18px}
+.ig-nav a{display:block;padding:10px 0;color:#222;text-decoration:none}
+.ig-main{flex:1}
+.ig-topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 24px;border-bottom:1px solid #eee}
+.ig-content{max-width:980px;margin:20px auto;padding:0 16px}
+.ig-tabs{display:flex;gap:12px;border-top:1px solid #eee;margin-top:18px;padding-top:12px}
+.tab{background:transparent;border:0;padding:8px 10px;cursor:pointer}
+.tab.active{border-bottom:2px solid #111;font-weight:700}
+.tiny-avatar{width:28px;height:28px;border-radius:50%;display:inline-block;background-image:url('https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&q=80');background-size:cover}
+
 
