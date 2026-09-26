@@ -17,7 +17,7 @@ function PostTile({ item, onOpen }) {
   )
 }
 
-function PostModal({ items, current, onClose, mobileReel=false }){
+function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
   const [index, setIndex] = useState(current)
   const wheelTime = useRef(0)
   useEffect(() => setIndex(current), [current])
@@ -45,9 +45,74 @@ function PostModal({ items, current, onClose, mobileReel=false }){
   }
 
   if (mobileReel) {
+    // autoplay/pause via IntersectionObserver
+    useEffect(() => {
+      const viewport = reelRef && reelRef.current ? reelRef.current.querySelector('.reel-viewport') : document.querySelector('.reel-viewport')
+      if (!viewport) return
+      const videos = () => Array.from(viewport.querySelectorAll('video.reel-video'))
+
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const el = entry.target
+          if (el.tagName.toLowerCase() !== 'video') return
+          if (entry.intersectionRatio >= 0.6) {
+            el.play().catch(() => {})
+          } else {
+            el.pause()
+          }
+        })
+      }, { threshold: [0.6] })
+
+      videos().forEach(v => obs.observe(v))
+      return () => obs.disconnect()
+    }, [items, reelRef])
+
+    // handle wheel and touch to change index
+    useEffect(() => {
+      const viewport = reelRef && reelRef.current ? reelRef.current.querySelector('.reel-viewport') : document.querySelector('.reel-viewport')
+      if (!viewport) return
+
+      let touchStartY = 0
+      let touchEndY = 0
+
+      const onTouchStart = (e) => { touchStartY = e.touches[0].clientY }
+      const onTouchEnd = (e) => {
+        touchEndY = e.changedTouches[0].clientY
+        const dy = touchStartY - touchEndY
+        if (Math.abs(dy) < 40) return
+        if (dy > 0) setIndex(i => Math.min(items.length - 1, i + 1))
+        else setIndex(i => Math.max(0, i - 1))
+      }
+
+      const onWheelLocal = (e) => {
+        const now = Date.now()
+        if (now - wheelTime.current < 300) return
+        if (e.deltaY > 20) { setIndex(i => Math.min(items.length - 1, i + 1)); wheelTime.current = now }
+        else if (e.deltaY < -20) { setIndex(i => Math.max(0, i - 1)); wheelTime.current = now }
+      }
+
+      viewport.addEventListener('touchstart', onTouchStart, { passive: true })
+      viewport.addEventListener('touchend', onTouchEnd, { passive: true })
+      viewport.addEventListener('wheel', onWheelLocal, { passive: true })
+
+      return () => {
+        viewport.removeEventListener('touchstart', onTouchStart)
+        viewport.removeEventListener('touchend', onTouchEnd)
+        viewport.removeEventListener('wheel', onWheelLocal)
+      }
+    }, [items, reelRef])
+
+    // scroll active item into view when index changes
+    useEffect(() => {
+      const viewport = reelRef && reelRef.current ? reelRef.current.querySelector('.reel-viewport') : document.querySelector('.reel-viewport')
+      if (!viewport) return
+      const el = viewport.querySelectorAll('.reel-item')[index]
+      if (el) el.scrollIntoView({ behavior: 'smooth' })
+    }, [index, reelRef])
+
     return (
       <div className="reel-modal" onClick={onClose}>
-        <div className="reel-inner" onClick={e => e.stopPropagation()}>
+        <div className="reel-inner" onClick={e => e.stopPropagation()} ref={reelRef}>
           <button className="reel-close" onClick={onClose}>&lt;</button>
           <div className="reel-viewport">
             {items.map((it, idx) => (
@@ -131,6 +196,7 @@ export default function PostGrid() {
   const [items, setItems] = useState([])
   const [openIndex, setOpenIndex] = useState(null)
   const [isMobileReel, setIsMobileReel] = useState(false)
+  const reelRef = useRef(null)
 
   useEffect(() => {
     const loadPosts = async () => {
@@ -186,12 +252,25 @@ export default function PostGrid() {
     loadPosts()
   }, [])
 
+  const openAt = (i) => {
+    const mobile = typeof window !== 'undefined' && window.innerWidth <= 760
+    setIsMobileReel(mobile)
+    setOpenIndex(i)
+    // allow scrolling to the selected index after modal opens
+    setTimeout(() => {
+      if (mobile && reelRef.current) {
+        const el = reelRef.current.querySelectorAll('.reel-item')[i]
+        if (el) el.scrollIntoView({ behavior: 'auto' })
+      }
+    }, 60)
+  }
+
   return (
     <>
       <section className="post-grid">
         {items.length === 0 && <div style={{ gridColumn: '1/-1', color: '#666' }}>No posts yet.</div>}
         {items.map((item, i) => (
-          <PostTile key={i} item={item} onOpen={() => setOpenIndex(i)} />
+          <PostTile key={i} item={item} onOpen={() => openAt(i)} />
         ))}
       </section>
 
@@ -201,6 +280,7 @@ export default function PostGrid() {
           current={openIndex}
           onClose={() => setOpenIndex(null)}
           mobileReel={isMobileReel}
+          reelRef={reelRef}
         />
       )}
     </>
