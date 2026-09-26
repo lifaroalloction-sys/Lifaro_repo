@@ -53,12 +53,14 @@ function PostModal({ items, current, onClose, mobileReel=false }){
             {items.map((it, idx) => (
               <div key={idx} className={`reel-item ${idx === index ? 'active' : ''}`}>
                 {it.type === 'video' ? (
-                  <iframe
-                    src={it.embed}
-                    title={it.about || 'Video post'}
-                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                    allowFullScreen
-                    className="reel-frame"
+                  <video
+                    className="reel-video"
+                    src={it.file || it.src}
+                    poster={it.thumbnail}
+                    loop
+                    playsInline
+                    controls
+                    preload="metadata"
                   />
                 ) : (
                   <img src={it.src} alt={it.about || 'post'} className="reel-image" />
@@ -114,7 +116,14 @@ function toImageSrc(url) {
 function toVideoEmbedUrl(url) {
   if (!url) return ''
   const driveId = getDriveFileId(url)
-  if (driveId) return `https://drive.google.com/file/d/${driveId}/preview?autoplay=1`
+  if (driveId) return `https://drive.google.com/file/d/${driveId}/preview`
+  return url
+}
+
+function toVideoFileUrl(url) {
+  if (!url) return ''
+  const driveId = getDriveFileId(url)
+  if (driveId) return `https://drive.google.com/uc?export=download&id=${driveId}`
   return url
 }
 
@@ -145,13 +154,23 @@ export default function PostGrid() {
               ''
             if (!url) return null
             const mediaType = type === 'video' ? 'video' : 'image'
-            const src = mediaType === 'video' ? toVideoEmbedUrl(url) : toImageSrc(url)
+            const thumbnail = toImageSrc(url)
+            if (mediaType === 'video') {
+              return {
+                url,
+                src: toVideoEmbedUrl(url),
+                file: toVideoFileUrl(url),
+                thumbnail,
+                type: 'video',
+                date,
+                about,
+              }
+            }
             return {
               url,
-              src,
-              thumbnail: toImageSrc(url),
-              type: mediaType,
-              embed: mediaType === 'video' ? toVideoEmbedUrl(url) : '',
+              src: toImageSrc(url),
+              thumbnail,
+              type: 'image',
               date,
               about,
             }
