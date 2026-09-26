@@ -1,103 +1,100 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
-function getDriveFileId(url) {
-  if (!url) return null
-
-  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
-  if (match) return match[1]
-
-  const queryMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/)
-  if (queryMatch) return queryMatch[1]
-
-  return null
+function PostTile({ src, alt, onOpen }){
+  return (
+    <div className="post-tile" onClick={onOpen} role="button" tabIndex={0}>
+      <img src={src} alt={alt} />
+    </div>
+  )
 }
 
-export default function PostGrid() {
-  const [url, setUrl] = useState('https://drive.google.com/file/d/13m3Q0PCLJA6b6Q-Trc6XYuySZGiyTuq9/view?usp=sharing')
-  const [imageSrc, setImageSrc] = useState('https://drive.google.com/thumbnail?id=13m3Q0PCLJA6b6Q-Trc6XYuySZGiyTuq9&sz=w2000')
-  const [error, setError] = useState('')
-
-  const loadMedia = () => {
-    const id = getDriveFileId(url)
-    if (!id) {
-      setError('Invalid Google Drive file URL')
-      return
+function PostModal({ items, current, onClose }){
+  const [index, setIndex] = useState(current)
+  const wheelTime = useRef(0)
+  useEffect(() => setIndex(current), [current])
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape') return onClose()
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') setIndex(i => (i + 1) % items.length)
+      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') setIndex(i => (i - 1 + items.length) % items.length)
     }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [items.length, onClose])
 
-    setError('')
-    setImageSrc(`https://drive.google.com/thumbnail?id=${id}&sz=w2000`)
-  }
+  if (index == null) return null
+  const next = () => setIndex((i) => (i + 1) % items.length)
+  const prev = () => setIndex((i) => (i - 1 + items.length) % items.length)
 
-  const handleImageError = (e) => {
-    const id = getDriveFileId(url)
-    if (!id) {
-      setError('Invalid Google Drive file URL')
-      return
-    }
-
-    e.target.src = `https://drive.google.com/uc?export=view&id=${id}`
-    e.target.onerror = () => {
-      setError('Image could not be displayed. Make sure the file is publicly shared.')
-    }
+  const onWheel = (e) => {
+    const now = Date.now()
+    if (now - wheelTime.current < 500) return
+    if (e.deltaY > 20) { next(); wheelTime.current = now }
+    else if (e.deltaY < -20) { prev(); wheelTime.current = now }
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'radial-gradient(circle at top left, #25204d, transparent 40%), radial-gradient(circle at bottom right, #32124d, transparent 40%), #080812',
-      color: 'white',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'flex-start',
-      padding: '40px 20px',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      <div style={{ width: '100%', maxWidth: 1100 }}>
-        <h1 style={{ textAlign: 'center', fontSize: 42, marginBottom: 10 }}>📸 Drive Media Viewer</h1>
-        <div style={{ textAlign: 'center', color: '#aaa', marginBottom: 35 }}>Paste a Google Drive image or video link</div>
-
-        <div style={{ display: 'flex', gap: 12, marginBottom: 30 }}>
-          <input
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="Paste Google Drive URL here..."
-            style={{
-              flex: 1,
-              padding: '17px 20px',
-              borderRadius: 14,
-              border: '1px solid #444',
-              background: 'rgba(255,255,255,0.06)',
-              color: 'white',
-              fontSize: 16,
-              outline: 'none'
-            }}
-          />
-          <button onClick={loadMedia} style={{ padding: '0 28px', border: 'none', borderRadius: 14, background: 'linear-gradient(135deg, #7b4dff, #bd45ff)', color: 'white', fontSize: 16, fontWeight: 'bold', cursor: 'pointer' }}>
-            Load Media
-          </button>
+    <div className="modal" onClick={onClose} onWheel={onWheel}>
+      <div className="modal-inner" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>✕</button>
+        <button className="modal-nav left" onClick={prev}>‹</button>
+        <div className="modal-media">
+          <img src={items[index]} alt={`post-${index}`} />
         </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 30 }}>
-          <button style={{ padding: '12px 20px', border: 'none', borderRadius: 14, background: 'linear-gradient(135deg, #7b4dff, #bd45ff)', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
-            🖼️ Image
-          </button>
-        </div>
-
-        <div style={{ width: '100%', minHeight: 500, borderRadius: 22, background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-          {imageSrc ? (
-            <img
-              src={imageSrc}
-              alt="Google Drive Image"
-              onError={handleImageError}
-              style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', display: 'block' }}
-            />
-          ) : (
-            <div style={{ textAlign: 'center', color: '#999', padding: '80px 20px' }}>Paste a Google Drive URL and click Load Media</div>
-          )}
-        </div>
-
-        {error && <div style={{ textAlign: 'center', color: '#ff6685', marginTop: 20 }}>{error}</div>}
+        <button className="modal-nav right" onClick={next}>›</button>
       </div>
     </div>
+  )
+}
+
+function toImageSrc(url) {
+  if (!url) return ''
+  const driveIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
+  if (driveIdMatch) return `https://drive.google.com/thumbnail?id=${driveIdMatch[1]}&sz=w1200`
+  return url
+}
+
+export default function PostGrid() {
+  const [items, setItems] = useState([])
+  const [openIndex, setOpenIndex] = useState(null)
+
+  useEffect(() => {
+    const loadPosts = async () => {
+      try {
+        const res = await fetch('/posts.xml')
+        const xml = await res.text()
+        const doc = new DOMParser().parseFromString(xml, 'application/xml')
+        const nodes = [...doc.querySelectorAll('post')]
+
+        const posts = nodes
+          .map((postNode) => {
+            const url = postNode.querySelector('url')?.textContent?.trim() || ''
+            const date = postNode.querySelector('date')?.textContent?.trim() || ''
+            const about = postNode.querySelector('about')?.textContent?.trim() || ''
+            if (!url) return null
+            return { url, date, about }
+          })
+          .filter(Boolean)
+
+        setItems(posts.map((post) => toImageSrc(post.url)))
+      } catch (err) {
+        setItems([])
+      }
+    }
+
+    loadPosts()
+  }, [])
+
+  return (
+    <>
+      <section className="post-grid">
+        {items.length === 0 && <div style={{ gridColumn: '1/-1', color: '#666' }}>No posts yet.</div>}
+        {items.map((src, i) => (
+          <PostTile key={i} src={src} alt={`post-${i}`} onOpen={() => setOpenIndex(i)} />
+        ))}
+      </section>
+
+      {openIndex !== null && <PostModal items={items} current={openIndex} onClose={() => setOpenIndex(null)} />}
+    </>
   )
 }
