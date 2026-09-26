@@ -1,6 +1,6 @@
-import React, {useState} from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
-function PostTile({src, alt, onOpen}){
+function PostTile({ src, alt, onOpen }){
   return (
     <div className="post-tile" onClick={onOpen} role="button" tabIndex={0}>
       <img src={src} alt={alt} />
@@ -8,11 +8,11 @@ function PostTile({src, alt, onOpen}){
   )
 }
 
-function PostModal({items, current, onClose}){
+function PostModal({ items, current, onClose }){
   const [index, setIndex] = useState(current)
-  const wheelTime = React.useRef(0)
-  React.useEffect(()=> setIndex(current), [current])
-  React.useEffect(()=>{
+  const wheelTime = useRef(0)
+  useEffect(()=> setIndex(current), [current])
+  useEffect(()=>{
     const onKey = (e)=>{
       if(e.key === 'Escape') return onClose()
       if(e.key === 'ArrowDown' || e.key === 'ArrowRight') setIndex(i=> (i+1) % items.length)
@@ -47,15 +47,12 @@ function PostModal({items, current, onClose}){
   )
 }
 
-export default function PostGrid(){
-  const [items, setItems] = useState([])
+export default function PostGrid({ initialPosts=[] }){
+  const [items, setItems] = useState(initialPosts)
   const [openIndex, setOpenIndex] = useState(null)
   const [showUpload, setShowUpload] = useState(false)
 
-  const handleAdd = (newItems)=>{
-    // prepend new items so newest appear first
-    setItems((prev)=>[...newItems, ...prev])
-  }
+  const handleAdd = (newItems)=> setItems(prev=> [...newItems, ...prev])
 
   return (
     <>
@@ -75,28 +72,21 @@ export default function PostGrid(){
   )
 }
 
-function UploadModal({onClose,onAdd}){
-  const [url,setUrl] = useState('')
-  const [date,setDate] = useState('')
-  const [about,setAbout] = useState('')
-  const [pickerLoaded,setPickerLoaded] = useState(false)
+function UploadModal({ onClose, onAdd }){
+  const [url, setUrl] = useState('')
+  const [date, setDate] = useState('')
+  const [about, setAbout] = useState('')
+  const [pickerLoaded, setPickerLoaded] = useState(false)
   const PICKER_CLIENT_ID = import.meta.env.VITE_PICKER_CLIENT_ID || ''
   const PICKER_APP_ID = import.meta.env.VITE_PICKER_APP_ID || ''
   const PICKER_ORIGIN = import.meta.env.VITE_PICKER_ORIGIN || window.location.origin
   const PICKER_PROMPT = import.meta.env.VITE_PICKER_PROMPT || 'consent'
-  const [previewSrc,setPreviewSrc] = useState(null)
-  const [previewType,setPreviewType] = useState(null)
-  const [checking,setChecking] = useState(false)
-  const [error,setError] = useState(null)
-
-  const extractDriveFileId = (u)=>{
-    const m = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
-    if(m) return m[1]
-    const q = new URLSearchParams((u.split('?')[1]||''))
-    if(q.get('id')) return q.get('id')
+  const [previewSrc, setPreviewSrc] = useState(null)
+  const [previewType, setPreviewType] = useState(null)
+  const [checking, setChecking] = useState(false)
+  const [error, setError] = useState(null)
 
   useEffect(()=>{
-    // lazy-load the Drive Picker web component (CDN) so the bundle doesn't require npm install
     if(window.customElements && window.customElements.get('drive-picker')){ setPickerLoaded(true); return }
     if(window._drivePickerLoading) return
     window._drivePickerLoading = true
@@ -108,7 +98,13 @@ function UploadModal({onClose,onAdd}){
     document.head.appendChild(s)
   },[])
 
-  // open the picker by creating element and listening for events
+  const extractDriveFileId = (u)=>{
+    if(!u) return null
+    const m = u.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
+    if(m) return m[1]
+    try{ const q = new URLSearchParams((u.split('?')[1]||'')); return q.get('id') }catch(e){ return null }
+  }
+
   const openPicker = ()=>{
     if(!pickerLoaded) return
     const picker = document.createElement('drive-picker')
@@ -123,10 +119,10 @@ function UploadModal({onClose,onAdd}){
       const docs = e.detail?.docs || []
       if(docs.length>0){
         const d = docs[0]
-        // populate the url field with the Drive file view link
         const fileUrl = d.url || `https://drive.google.com/file/d/${d.id}/view?usp=sharing`
-        const inp = document.querySelector('#drive-url-input')
-        if(inp){ inp.value = fileUrl; inp.dispatchEvent(new Event('input',{bubbles:true})) }
+        setUrl(fileUrl)
+        // trigger preview automatically
+        setTimeout(()=> checkUrl(fileUrl), 50)
       }
       picker.remove()
     })
@@ -134,98 +130,82 @@ function UploadModal({onClose,onAdd}){
     picker.addEventListener('picker-error', (ev)=>{ console.error('Picker error', ev); picker.remove() })
     document.body.appendChild(picker)
   }
-    return null
-  }
 
-  const checkUrl = async ()=>{
+  async function checkUrl(overrideUrl){
+    const u = overrideUrl || url
     setError(null)
     setChecking(true)
     setPreviewSrc(null)
     try{
-      // if it's a Google Drive file link, convert to direct view URL
-      let fileId = null
-      try{ fileId = extractDriveFileId(url) }catch(e){fileId=null}
+      const fileId = extractDriveFileId(u)
       if(fileId){
-        // allow configuring backend base URL via Vite env
-        const API_BASE = import.meta.env.VITE_API_BASE || ''
-        const proxy = `${API_BASE}/api/drive/media/${fileId}`
-        // try image
-        await new Promise((res)=>{
-          if(fileId){
-            const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
-            const proxy = API_BASE ? `${API_BASE}/api/drive/media/${fileId}` : `/api/drive/media/${fileId}`
-      <button onClick={checkUrl}>Check URL</button>
-      <button onClick={openPicker} disabled={!pickerLoaded || !PICKER_CLIENT_ID} title={!PICKER_CLIENT_ID? 'Set VITE_PICKER_CLIENT_ID to enable Picker' : (!pickerLoaded? 'Loading picker...' : 'Open Drive Picker')}>Open Picker</button>
-            // probe the proxy using fetch so we can inspect HTTP status and content-type
-            try{
-              const resp = await fetch(proxy, { method: 'GET' })
-              if(resp.ok){
-                const ct = (resp.headers.get('content-type')||'').toLowerCase()
-                if(ct.startsWith('image/')){ setPreviewSrc(proxy); setPreviewType('image'); setChecking(false); return }
-                if(ct.startsWith('video/')){ setPreviewSrc(proxy); setPreviewType('video'); setChecking(false); return }
-                // unknown type -> create blob URL and inspect
-                const blob = await resp.blob()
-                const blobUrl = URL.createObjectURL(blob)
-                if(blob.type.startsWith('image/')){ setPreviewSrc(blobUrl); setPreviewType('image'); setChecking(false); return }
-                if(blob.type.startsWith('video/')){ setPreviewSrc(blobUrl); setPreviewType('video'); setChecking(false); return }
-              } else if(resp.status === 404){
-                // backend not serving this path — fall through to public fallback below
-              } else if(resp.status === 403){
-                setError('Backend returned 403 Forbidden. Check service account permissions or backend CORS settings.')
-                setChecking(false)
-                return
-              } else {
-                setError(`Backend returned ${resp.status} ${resp.statusText}`)
-                setChecking(false)
-                return
-              }
-            }catch(err){
-              // network error / CORS / unreachable
-              const runningOnGithubPages = window.location.host.includes('github.io')
-              if(runningOnGithubPages && !API_BASE){
-                setError('Backend unreachable. On GitHub Pages you must set VITE_API_BASE to your deployed backend URL to preview private Drive files.')
-              } else {
-                setError('Could not reach backend proxy. Ensure the backend is running and CORS allows your site origin.')
-              }
-              setChecking(false)
-              return
-            }
-
-            // fallback to public Drive preview URL (works only for files shared publicly)
-            const publicUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
-            try{
-              const r2 = await fetch(publicUrl, { method: 'GET' })
-              if(r2.ok){
-                const ct2 = (r2.headers.get('content-type')||'').toLowerCase()
-                if(ct2.startsWith('image/')){ setPreviewSrc(publicUrl); setPreviewType('image'); setChecking(false); return }
-                if(ct2.startsWith('video/')){ setPreviewSrc(publicUrl); setPreviewType('video'); setChecking(false); return }
-                const blob2 = await r2.blob(); const burl2 = URL.createObjectURL(blob2)
-                if(blob2.type.startsWith('image/')){ setPreviewSrc(burl2); setPreviewType('image'); setChecking(false); return }
-                if(blob2.type.startsWith('video/')){ setPreviewSrc(burl2); setPreviewType('video'); setChecking(false); return }
-              } else if(r2.status === 403){
-                setError('Drive returned 403: file is not publicly shared. Run or deploy the backend and set VITE_API_BASE to preview private files.')
-                setChecking(false)
-                return
-              }
-            }catch(e){
-              // ignore and fall through
-            }
+        const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+        const proxy = API_BASE ? `${API_BASE}/api/drive/media/${fileId}` : `/api/drive/media/${fileId}`
+        try{
+          const resp = await fetch(proxy, { method: 'GET' })
+          if(resp.ok){
+            const ct = (resp.headers.get('content-type')||'').toLowerCase()
+            if(ct.startsWith('image/')){ setPreviewSrc(proxy); setPreviewType('image'); setChecking(false); return }
+            if(ct.startsWith('video/')){ setPreviewSrc(proxy); setPreviewType('video'); setChecking(false); return }
+            const blob = await resp.blob(); const blobUrl = URL.createObjectURL(blob)
+            if(blob.type.startsWith('image/')){ setPreviewSrc(blobUrl); setPreviewType('image'); setChecking(false); return }
+            if(blob.type.startsWith('video/')){ setPreviewSrc(blobUrl); setPreviewType('video'); setChecking(false); return }
+          } else if(resp.status === 403){
+            setError('Backend returned 403 Forbidden. Check service account permissions or backend CORS settings.')
+            setChecking(false); return
           }
-      if(!previewSrc){ setError('Unable to fetch media from the provided URL. If the URL is a Drive folder, the backend must be used.'); }
+          // fallthrough to public URL
+        }catch(err){
+          const runningOnGithubPages = window.location.host.includes('github.io')
+          if(runningOnGithubPages && !API_BASE){
+            setError('Backend unreachable. On GitHub Pages set VITE_API_BASE to your backend URL to preview private Drive files.')
+          } else {
+            setError('Could not reach backend proxy. Ensure the backend is running and CORS allows your site origin.')
+          }
+          setChecking(false); return
+        }
+
+        // fallback to public Drive view
+        const publicUrl = `https://drive.google.com/uc?export=view&id=${fileId}`
+        try{
+          const r2 = await fetch(publicUrl, { method: 'GET' })
+          if(r2.ok){
+            const ct2 = (r2.headers.get('content-type')||'').toLowerCase()
+            if(ct2.startsWith('image/')){ setPreviewSrc(publicUrl); setPreviewType('image'); setChecking(false); return }
+            if(ct2.startsWith('video/')){ setPreviewSrc(publicUrl); setPreviewType('video'); setChecking(false); return }
+            const blob2 = await r2.blob(); const burl2 = URL.createObjectURL(blob2)
+            if(blob2.type.startsWith('image/')){ setPreviewSrc(burl2); setPreviewType('image'); setChecking(false); return }
+            if(blob2.type.startsWith('video/')){ setPreviewSrc(burl2); setPreviewType('video'); setChecking(false); return }
+          } else if(r2.status === 403){
+            setError('Drive returned 403: file is not publicly shared. Run or deploy the backend and set VITE_API_BASE to preview private files.')
+            setChecking(false); return
+          }
+        }catch(e){ /* ignore */ }
+      } else {
+        // non-Drive URL - try as direct media URL
+        try{
+          const resp = await fetch(u, { method: 'GET' })
+          if(resp.ok){
+            const ct = (resp.headers.get('content-type')||'').toLowerCase()
+            if(ct.startsWith('image/')){ setPreviewSrc(u); setPreviewType('image'); setChecking(false); return }
+            if(ct.startsWith('video/')){ setPreviewSrc(u); setPreviewType('video'); setChecking(false); return }
+          }
+        }catch(e){}
+      }
+
+      setError('Unable to fetch media from the provided URL. If the URL is a Drive folder or private file, run the backend and set VITE_API_BASE.')
     }catch(e){ setError('Error while checking URL') }
     setChecking(false)
   }
 
   const doPost = ()=>{
     if(!previewSrc){ setError('No media to post'); return }
-    // persist post to server if available
-    fetch('/api/posts', {
+    const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
+    const postUrl = API_BASE ? `${API_BASE}/api/posts` : '/api/posts'
+    fetch(postUrl, {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ mediaUrl: previewSrc, date, about })
-    }).then(r=>{
-      if(r.ok) onAdd([previewSrc])
-      else onAdd([previewSrc])
-    }).catch(()=> onAdd([previewSrc]))
+    }).then(r=> onAdd([previewSrc])).catch(()=> onAdd([previewSrc]))
   }
 
   return (
@@ -235,13 +215,14 @@ function UploadModal({onClose,onAdd}){
         <div className="upload-grid">
           <div className="upload-form">
             <label>Drive URL or media URL</label>
-            <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://drive.google.com/file/d/... or https://..." />
+            <input id="drive-url-input" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://drive.google.com/file/d/... or https://..." />
             <label>Date</label>
             <input type="date" value={date} onChange={e=>setDate(e.target.value)} />
             <label>About</label>
             <textarea value={about} onChange={e=>setAbout(e.target.value)} />
-            <div style={{marginTop:8}}>
-              <button className="btn primary" onClick={checkUrl} disabled={checking}>{checking? 'Checking...':'Check URL'}</button>
+            <div style={{marginTop:8, display:'flex', gap:8}}>
+              <button className="btn primary" onClick={()=>checkUrl()} disabled={checking}>{checking? 'Checking...':'Check URL'}</button>
+              <button className="btn" onClick={openPicker} disabled={!pickerLoaded || !PICKER_CLIENT_ID}>{!PICKER_CLIENT_ID? 'Picker (needs CLIENT_ID)': 'Open Picker'}</button>
               <button className="btn" onClick={doPost} style={{marginLeft:8}}>Post</button>
             </div>
             {error && <div style={{color:'red',marginTop:8}}>{error}</div>}
