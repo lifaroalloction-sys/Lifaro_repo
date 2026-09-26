@@ -151,18 +151,18 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
 
     // play poster inline by replacing poster with a video element
     const playInline = (clickIdx) => {
-      const viewport = reelRef && reelRef.current ? reelRef.current.querySelector('.reel-viewport') : document.querySelector('.reel-viewport')
-      if (!viewport) return
-      const itemEl = viewport.querySelectorAll('.reel-item')[clickIdx]
-      if (!itemEl) return
-      const posterEl = itemEl.querySelector('.reel-poster')
-      if (!posterEl) return
-      if (!posterEl.querySelector('.reel-play-error')) {
-        const hint = document.createElement('div')
-        hint.className = 'reel-play-error'
-        hint.textContent = 'Playback not supported in-app on mobile.'
-        posterEl.appendChild(hint)
-        setTimeout(() => { if (hint && hint.parentNode) hint.parentNode.removeChild(hint) }, 2200)
+      // Instead of attempting unreliable in-app playback on mobile,
+      // navigate the current window to the proxied media URL (server) if available,
+      // otherwise fall back to the original Drive share URL so the device's native player opens.
+      const it = items[clickIdx]
+      const target = it.proxy || it.url || it.src
+      if (!target) return
+      // navigate in-place (same tab) so mobile opens native player
+      try {
+        window.location.href = target
+      } catch (e) {
+        // fallback: open in same tab via replace
+        window.location.replace(target)
       }
     }
 
