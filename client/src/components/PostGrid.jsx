@@ -17,7 +17,7 @@ function PostTile({ item, onOpen }) {
   )
 }
 
-function PostModal({ items, current, onClose }){
+function PostModal({ items, current, onClose, mobileReel=false }){
   const [index, setIndex] = useState(current)
   const wheelTime = useRef(0)
   useEffect(() => setIndex(current), [current])
@@ -42,6 +42,33 @@ function PostModal({ items, current, onClose }){
     if (now - wheelTime.current < 500) return
     if (e.deltaY > 20) { next(); wheelTime.current = now }
     else if (e.deltaY < -20) { prev(); wheelTime.current = now }
+  }
+
+  if (mobileReel) {
+    return (
+      <div className="reel-modal" onClick={onClose}>
+        <div className="reel-inner" onClick={e => e.stopPropagation()}>
+          <button className="reel-close" onClick={onClose}>&lt;</button>
+          <div className="reel-viewport">
+            {items.map((it, idx) => (
+              <div key={idx} className={`reel-item ${idx === index ? 'active' : ''}`}>
+                {it.type === 'video' ? (
+                  <iframe
+                    src={it.embed}
+                    title={it.about || 'Video post'}
+                    allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                    allowFullScreen
+                    className="reel-frame"
+                  />
+                ) : (
+                  <img src={it.src} alt={it.about || 'post'} className="reel-image" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -94,6 +121,7 @@ function toVideoEmbedUrl(url) {
 export default function PostGrid() {
   const [items, setItems] = useState([])
   const [openIndex, setOpenIndex] = useState(null)
+  const [isMobileReel, setIsMobileReel] = useState(false)
 
   useEffect(() => {
     const loadPosts = async () => {
@@ -148,7 +176,14 @@ export default function PostGrid() {
         ))}
       </section>
 
-      {openIndex !== null && <PostModal items={items} current={openIndex} onClose={() => setOpenIndex(null)} />}
+      {openIndex !== null && (
+        <PostModal
+          items={items}
+          current={openIndex}
+          onClose={() => setOpenIndex(null)}
+          mobileReel={isMobileReel}
+        />
+      )}
     </>
   )
 }
