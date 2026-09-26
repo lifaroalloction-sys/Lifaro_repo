@@ -222,12 +222,25 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
         <button className="modal-nav left" onClick={prev}>‹</button>
         <div className="modal-media">
           {item.type === 'video' ? (
-            <iframe
-              src={item.src}
-              title={item.about || 'Video post'}
-              allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
-              className="video-frame"
-            />
+            // Prefer HTML5 <video> when we have a proxied or direct MP4 URL that is CORS-friendly.
+            // Fallback to Drive preview iframe when only embed URL is available.
+            (item.proxy || (item.file && !item.file.includes('drive.google.com/uc'))) ? (
+              <video
+                className="modal-video"
+                src={item.proxy || item.file || item.src}
+                poster={item.thumbnail}
+                controls
+                playsInline
+                preload="metadata"
+              />
+            ) : (
+              <iframe
+                src={item.src}
+                title={item.about || 'Video post'}
+                allow="fullscreen; autoplay; encrypted-media; picture-in-picture"
+                className="video-frame"
+              />
+            )
           ) : (
             <img src={item.src} alt={item.about || 'post'} className="modal-image" />
           )}
