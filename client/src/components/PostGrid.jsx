@@ -101,23 +101,25 @@ function UploadModal({onClose,onAdd}){
       let fileId = null
       try{ fileId = extractDriveFileId(url) }catch(e){fileId=null}
       if(fileId){
-        const direct = `https://drive.google.com/uc?export=view&id=${fileId}`
-        // try as image
-        await new Promise((res,rej)=>{
+        // use server proxy to avoid CORS/auth issues
+        const proxy = `/api/drive/media/${fileId}`
+        // try image
+        await new Promise((res)=>{
           const img = new Image()
-          img.onload = ()=>{ setPreviewSrc(direct); setPreviewType('image'); res() }
+          img.crossOrigin = 'anonymous'
+          img.onload = ()=>{ setPreviewSrc(proxy); setPreviewType('image'); res() }
           img.onerror = ()=>{ res() }
-          img.src = direct
+          img.src = proxy
         })
         if(previewSrc) { setChecking(false); return }
-        // try as video
+        // try video
         const videoTest = document.createElement('video')
         await new Promise((res)=>{
           let done=false
           const to= setTimeout(()=>{ if(!done){ done=true; res() } },3000)
-          videoTest.onloadedmetadata = ()=>{ if(!done){ done=true; clearTimeout(to); setPreviewSrc(direct); setPreviewType('video'); res() } }
+          videoTest.onloadedmetadata = ()=>{ if(!done){ done=true; clearTimeout(to); setPreviewSrc(proxy); setPreviewType('video'); res() } }
           videoTest.onerror = ()=>{ if(!done){ done=true; clearTimeout(to); res() } }
-          videoTest.src = direct
+          videoTest.src = proxy
         })
         if(previewSrc){ setChecking(false); return }
       }
@@ -148,7 +150,14 @@ function UploadModal({onClose,onAdd}){
 
   const doPost = ()=>{
     if(!previewSrc){ setError('No media to post'); return }
-    onAdd([previewSrc])
+    // persist post to server if available
+    fetch('/api/posts', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ mediaUrl: previewSrc, date, about })
+    }).then(r=>{
+      if(r.ok) onAdd([previewSrc])
+      else onAdd([previewSrc])
+    }).catch(()=> onAdd([previewSrc]))
   }
 
   return (
