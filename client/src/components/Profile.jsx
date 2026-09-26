@@ -1,10 +1,12 @@
 import React from 'react'
 
 export default function Profile(){
+  const avatarUrl = 'https://drive.google.com/thumbnail?id=1MFcGN82jgIT2sltigoxI7Zpj3ixCEZck&sz=w800'
+
   return (
     <section className="profile">
       <aside className="profile-left">
-        <div className="avatar" />
+        <img className="avatar" src={avatarUrl} alt="Profile" />
       </aside>
       <div className="profile-main">
         <div className="profile-head">
