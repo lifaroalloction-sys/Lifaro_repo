@@ -58,6 +58,8 @@ body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:var(-
 .reel-poster img.reel-image{width:100%;height:100vh;object-fit:cover}
 .reel-play-btn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:72px;height:72px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:0;font-size:28px;display:flex;align-items:center;justify-content:center}
 
+.reel-play-error{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(0,0,0,0.6);color:#fff;padding:8px 12px;border-radius:8px;font-size:14px}
+
 /* when HTML5 video is playing, hide overlay hints */
 video.reel-video{transition:opacity 200ms ease}
 video.reel-video.is-playing{opacity:1}

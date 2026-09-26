@@ -144,6 +144,72 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
       if (el) el.scrollIntoView({ behavior: 'smooth' })
     }, [index, reelRef])
 
+    // play poster inline by replacing poster with a video element
+    const playInline = async (clickIdx) => {
+      const viewport = reelRef && reelRef.current ? reelRef.current.querySelector('.reel-viewport') : document.querySelector('.reel-viewport')
+      if (!viewport) return
+      const itemEl = viewport.querySelectorAll('.reel-item')[clickIdx]
+      if (!itemEl) return
+      const posterEl = itemEl.querySelector('.reel-poster')
+      if (!posterEl) return
+      // prevent double-insert
+      if (itemEl.querySelector('video.reel-video')) return
+
+      const it = items[clickIdx]
+      const video = document.createElement('video')
+      video.className = 'reel-video'
+      video.playsInline = true
+      video.muted = true
+      video.controls = false
+      video.preload = 'auto'
+
+      try {
+        if (it.file) {
+          // try to fetch file as blob (may fail due to CORS)
+          const res = await fetch(it.file, { method: 'GET', mode: 'cors' })
+          if (res.ok) {
+            const contentType = res.headers.get('content-type') || ''
+            if (contentType.startsWith('video')) {
+              const blob = await res.blob()
+              video.src = URL.createObjectURL(blob)
+            } else {
+              video.src = it.file
+            }
+          } else {
+            video.src = it.file
+          }
+        } else {
+          // try direct src (preview) — may not work, but attempt
+          video.src = it.src
+        }
+
+        // replace poster with video element
+        posterEl.replaceWith(video)
+
+        // autoplay muted when inserted; user can tap to unmute (handled by click handler on video)
+        video.addEventListener('click', () => {
+          if (video.muted) {
+            video.muted = false
+            video.controls = true
+            video.play().catch(() => {})
+          } else {
+            video.muted = true
+            video.controls = false
+          }
+        })
+
+        video.addEventListener('play', () => video.classList.add('is-playing'))
+        video.addEventListener('pause', () => video.classList.remove('is-playing'))
+        video.play().catch(() => {})
+      } catch (err) {
+        // show inline hint when playback not possible
+        const hint = document.createElement('div')
+        hint.className = 'reel-play-error'
+        hint.textContent = 'Playback not available in-app'
+        posterEl.appendChild(hint)
+      }
+    }
+
     return (
       <div className="reel-modal" onClick={onClose}>
         <div className="reel-inner" onClick={e => e.stopPropagation()} ref={reelRef}>
@@ -166,10 +232,10 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
                       />
                     ) : (
                       <div className="reel-iframe-wrap">
-                          <div className="reel-poster" onClick={() => window.open(it.src, '_blank')} role="button" tabIndex={0}>
-                            <img src={it.thumbnail} alt={it.about || 'video poster'} className="reel-image" />
-                            <button className="reel-play-btn">▶</button>
-                          </div>
+                          <div className="reel-poster" onClick={() => playInline(idx)} role="button" tabIndex={0}>
+                                <img src={it.thumbnail} alt={it.about || 'video poster'} className="reel-image" />
+                                <button className="reel-play-btn">▶</button>
+                              </div>
                         </div>
                     )
                   ) : (
