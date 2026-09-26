@@ -5,7 +5,14 @@ function PostTile({ item, onOpen }) {
 
   return (
     <div className="post-tile" onClick={onOpen} role="button" tabIndex={0}>
-      {item.type === 'video' ? <video src={item.src} poster={src} muted playsInline /> : <img src={src} alt={item.about || 'post'} />}
+      {item.type === 'video' ? (
+        <div className="video-thumb-wrap">
+          <img src={src} alt={item.about || 'post'} />
+          <span className="play-badge">▶</span>
+        </div>
+      ) : (
+        <img src={src} alt={item.about || 'post'} />
+      )}
     </div>
   )
 }
@@ -24,7 +31,9 @@ function PostModal({ items, current, onClose }){
     return () => window.removeEventListener('keydown', onKey)
   }, [items.length, onClose])
 
-  if (index == null) return null
+  const item = items[index]
+  if (!item) return null
+
   const next = () => setIndex((i) => (i + 1) % items.length)
   const prev = () => setIndex((i) => (i - 1 + items.length) % items.length)
 
@@ -35,8 +44,6 @@ function PostModal({ items, current, onClose }){
     else if (e.deltaY < -20) { prev(); wheelTime.current = now }
   }
 
-  const item = items[index]
-
   return (
     <div className="modal" onClick={onClose} onWheel={onWheel}>
       <div className="modal-inner" onClick={e => e.stopPropagation()}>
@@ -44,9 +51,15 @@ function PostModal({ items, current, onClose }){
         <button className="modal-nav left" onClick={prev}>‹</button>
         <div className="modal-media">
           {item.type === 'video' ? (
-            <video src={item.src} controls autoPlay playsInline style={{ maxWidth: '100%', maxHeight: '75vh', display: 'block' }} />
+            <iframe
+              src={item.embed}
+              title={item.about || 'Video post'}
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
+              className="video-frame"
+            />
           ) : (
-            <img src={item.src} alt={item.about || 'post'} style={{ maxWidth: '100%', maxHeight: '75vh', display: 'block' }} />
+            <img src={item.src} alt={item.about || 'post'} className="modal-image" />
           )}
         </div>
         <button className="modal-nav right" onClick={next}>›</button>
@@ -71,10 +84,10 @@ function toImageSrc(url) {
   return url
 }
 
-function toVideoSrc(url) {
+function toVideoEmbedUrl(url) {
   if (!url) return ''
   const driveId = getDriveFileId(url)
-  if (driveId) return `https://drive.google.com/uc?export=download&id=${driveId}`
+  if (driveId) return `https://drive.google.com/file/d/${driveId}/preview?autoplay=1`
   return url
 }
 
@@ -104,11 +117,13 @@ export default function PostGrid() {
               ''
             if (!url) return null
             const mediaType = type === 'video' ? 'video' : 'image'
+            const src = mediaType === 'video' ? toVideoEmbedUrl(url) : toImageSrc(url)
             return {
               url,
-              src: mediaType === 'video' ? toVideoSrc(url) : toImageSrc(url),
+              src,
               thumbnail: toImageSrc(url),
               type: mediaType,
+              embed: mediaType === 'video' ? toVideoEmbedUrl(url) : '',
               date,
               about,
             }
