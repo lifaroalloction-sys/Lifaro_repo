@@ -166,15 +166,11 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
                       />
                     ) : (
                       <div className="reel-iframe-wrap">
-                        <iframe
-                          className="reel-frame"
-                          src={it.src}
-                          title={it.about || 'Video post'}
-                          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-                          allowFullScreen
-                        />
-                        <div className="reel-play-hint">Tap to play</div>
-                      </div>
+                          <div className="reel-poster" onClick={() => window.open(it.src, '_blank')} role="button" tabIndex={0}>
+                            <img src={it.thumbnail} alt={it.about || 'video poster'} className="reel-image" />
+                            <button className="reel-play-btn">▶</button>
+                          </div>
+                        </div>
                     )
                   ) : (
                     <img src={it.src} alt={it.about || 'post'} className="reel-image" />
