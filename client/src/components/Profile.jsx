@@ -12,17 +12,15 @@ export default function Profile(){
         </aside>
         <div className="profile-main">
           <div className="profile-head">
-            <h2 className="username">lifaro</h2>
-            <button className="btn primary">Edit Profile</button>
-          </div>
-          <div className="meta">
-            <div><strong>36</strong> posts</div>
-            <div><strong>2,458</strong> followers</div>
-            <div><strong>312</strong> following</div>
-          </div>
-          <div className="bio">
-            <p>Just a guy with big dreams 🌿<br/>Travel | Photography | Good Vibes</p>
-          </div>
+              <h2 className="username">VINOTHKUMAR EXPLORATION</h2>
+              <button className="btn primary">Edit Profile</button>
+            </div>
+            <div className="meta">
+              <div><strong>2,458</strong> followers</div>
+            </div>
+            <div className="bio">
+              <p>Travel | Good feels | Memories</p>
+            </div>
         </div>
       </section>
 
