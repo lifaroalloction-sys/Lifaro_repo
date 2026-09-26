@@ -79,6 +79,11 @@ function UploadModal({onClose,onAdd}){
   const [url,setUrl] = useState('')
   const [date,setDate] = useState('')
   const [about,setAbout] = useState('')
+  const [pickerLoaded,setPickerLoaded] = useState(false)
+  const PICKER_CLIENT_ID = import.meta.env.VITE_PICKER_CLIENT_ID || ''
+  const PICKER_APP_ID = import.meta.env.VITE_PICKER_APP_ID || ''
+  const PICKER_ORIGIN = import.meta.env.VITE_PICKER_ORIGIN || window.location.origin
+  const PICKER_PROMPT = import.meta.env.VITE_PICKER_PROMPT || 'consent'
   const [previewSrc,setPreviewSrc] = useState(null)
   const [previewType,setPreviewType] = useState(null)
   const [checking,setChecking] = useState(false)
@@ -89,6 +94,46 @@ function UploadModal({onClose,onAdd}){
     if(m) return m[1]
     const q = new URLSearchParams((u.split('?')[1]||''))
     if(q.get('id')) return q.get('id')
+
+  useEffect(()=>{
+    // lazy-load the Drive Picker web component (CDN) so the bundle doesn't require npm install
+    if(window.customElements && window.customElements.get('drive-picker')){ setPickerLoaded(true); return }
+    if(window._drivePickerLoading) return
+    window._drivePickerLoading = true
+    const s = document.createElement('script')
+    s.src = 'https://unpkg.com/@googleworkspace/drive-picker-element@latest/dist/index.iife.min.js'
+    s.async = true
+    s.onload = ()=>{ setPickerLoaded(true); window._drivePickerLoading = false }
+    s.onerror = ()=>{ window._drivePickerLoading = false }
+    document.head.appendChild(s)
+  },[])
+
+  // open the picker by creating element and listening for events
+  const openPicker = ()=>{
+    if(!pickerLoaded) return
+    const picker = document.createElement('drive-picker')
+    if(PICKER_CLIENT_ID) picker.setAttribute('client-id', PICKER_CLIENT_ID)
+    if(PICKER_APP_ID) picker.setAttribute('app-id', PICKER_APP_ID)
+    if(PICKER_ORIGIN) picker.setAttribute('origin', PICKER_ORIGIN)
+    if(PICKER_PROMPT) picker.setAttribute('prompt', PICKER_PROMPT)
+    const view = document.createElement('drive-picker-docs-view')
+    view.setAttribute('mime-types', 'image/jpeg,image/png,video/mp4,video/quicktime')
+    picker.appendChild(view)
+    picker.addEventListener('picker-picked', (e)=>{
+      const docs = e.detail?.docs || []
+      if(docs.length>0){
+        const d = docs[0]
+        // populate the url field with the Drive file view link
+        const fileUrl = d.url || `https://drive.google.com/file/d/${d.id}/view?usp=sharing`
+        const inp = document.querySelector('#drive-url-input')
+        if(inp){ inp.value = fileUrl; inp.dispatchEvent(new Event('input',{bubbles:true})) }
+      }
+      picker.remove()
+    })
+    picker.addEventListener('picker-canceled', ()=> picker.remove())
+    picker.addEventListener('picker-error', (ev)=>{ console.error('Picker error', ev); picker.remove() })
+    document.body.appendChild(picker)
+  }
     return null
   }
 
@@ -109,7 +154,8 @@ function UploadModal({onClose,onAdd}){
           if(fileId){
             const API_BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
             const proxy = API_BASE ? `${API_BASE}/api/drive/media/${fileId}` : `/api/drive/media/${fileId}`
-
+      <button onClick={checkUrl}>Check URL</button>
+      <button onClick={openPicker} disabled={!pickerLoaded || !PICKER_CLIENT_ID} title={!PICKER_CLIENT_ID? 'Set VITE_PICKER_CLIENT_ID to enable Picker' : (!pickerLoaded? 'Loading picker...' : 'Open Drive Picker')}>Open Picker</button>
             // probe the proxy using fetch so we can inspect HTTP status and content-type
             try{
               const resp = await fetch(proxy, { method: 'GET' })
