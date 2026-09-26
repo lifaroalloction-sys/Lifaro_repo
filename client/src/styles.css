@@ -50,6 +50,17 @@ body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:var(-
 .reel-video{width:100%;height:100vh;object-fit:cover;background:#000}
 .reel-item.active{outline:0}
 
+/* Profile modal full view */
+.profile-modal{position:fixed;inset:0;background:rgba(0,0,0,0.98);display:flex;align-items:center;justify-content:center;z-index:1000}
+.profile-modal-inner{position:relative;width:100%;max-width:420px;padding:28px;border-radius:12px;background:transparent;display:flex;align-items:center;justify-content:center}
+.profile-modal-close{position:absolute;left:12px;top:18px;background:transparent;border-radius:50%;width:44px;height:44px;border:1px solid rgba(255,255,255,0.18);cursor:pointer;font-weight:700;color:#fff;z-index:101;display:flex;align-items:center;justify-content:center;font-size:22px;backdrop-filter:blur(6px)}
+.profile-full{display:flex;flex-direction:column;align-items:center;gap:16px;color:#fff;text-align:center}
+.profile-full-avatar img{width:160px;height:160px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,255,255,0.12);box-shadow:0 8px 32px rgba(0,0,0,0.6)}
+.profile-full-title{margin:6px 0 0;font-size:20px;letter-spacing:0.6px}
+.profile-full-stats{margin-top:4px}
+.profile-full-followers{color:#fff}
+.profile-full-desc{color:rgba(255,255,255,0.9);margin-top:8px}
+
 @media (max-width: 760px){
 	.modal{background:transparent}
 	.modal-inner{max-width:100%;width:100%;height:100%}
