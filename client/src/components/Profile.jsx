@@ -12,8 +12,7 @@ export default function Profile(){
         </aside>
         <div className="profile-main">
           <div className="profile-head">
-              <h2 className="username">VINOTHKUMAR EXPLORATION</h2>
-              <button className="btn primary">Edit Profile</button>
+              <h2 className="username">Vinoth kumar exploration</h2>
             </div>
             <div className="meta">
               <div><strong>2,458</strong> followers</div>
@@ -27,7 +26,6 @@ export default function Profile(){
       {open && (
         <div className="profile-modal" onClick={() => setOpen(false)}>
           <div className="profile-modal-inner" onClick={(e) => e.stopPropagation()}>
-            <button className="profile-modal-close" onClick={() => setOpen(false)}>&lt;</button>
             <div className="profile-full">
               <div className="profile-full-avatar">
                 <img src={avatarUrl} alt="avatar" />

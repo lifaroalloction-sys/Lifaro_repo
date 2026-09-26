@@ -117,19 +117,34 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
           <div className="reel-viewport">
             {items.map((it, idx) => (
               <div key={idx} className={`reel-item ${idx === index ? 'active' : ''}`}>
-                {it.type === 'video' ? (
-                  <video
-                    className="reel-video"
-                    src={it.file || it.src}
-                    poster={it.thumbnail}
-                    loop
-                    playsInline
-                    controls
-                    preload="metadata"
-                  />
-                ) : (
-                  <img src={it.src} alt={it.about || 'post'} className="reel-image" />
-                )}
+                  {it.type === 'video' ? (
+                    // Prefer HTML5 video only when we have a direct file URL that is likely CORS-friendly.
+                    // Google Drive `uc?export=download` is typically blocked by CORS, so fall back to the preview iframe.
+                    (it.file && !it.file.includes('drive.google.com/uc')) ? (
+                      <video
+                        className="reel-video"
+                        src={it.file}
+                        poster={it.thumbnail}
+                        loop
+                        playsInline
+                        controls
+                        preload="metadata"
+                      />
+                    ) : (
+                      <div className="reel-iframe-wrap">
+                        <iframe
+                          className="reel-frame"
+                          src={it.src}
+                          title={it.about || 'Video post'}
+                          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+                          allowFullScreen
+                        />
+                        <div className="reel-play-hint">Tap to play</div>
+                      </div>
+                    )
+                  ) : (
+                    <img src={it.src} alt={it.about || 'post'} className="reel-image" />
+                  )}
               </div>
             ))}
           </div>
@@ -146,7 +161,7 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
         <div className="modal-media">
           {item.type === 'video' ? (
             <iframe
-              src={item.embed}
+              src={item.src}
               title={item.about || 'Video post'}
               allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
               allowFullScreen
