@@ -48,3 +48,11 @@ body{margin:0;font-family:Inter,system-ui,Arial;background:var(--bg);color:var(-
 
 /* Footer */
 .site-footer{padding:24px 16px;border-top:1px solid #f2f2f2;margin-top:32px;color:var(--muted)}
+
+/* Upload modal */
+.upload-modal{width:900px;background:#fff;padding:18px;border-radius:8px;position:relative}
+.upload-grid{display:grid;grid-template-columns:1fr 360px;gap:12px}
+.upload-form label{display:block;margin-top:8px;font-weight:600}
+.upload-form input,.upload-form textarea{width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;margin-top:6px}
+.upload-preview{border:1px dashed #eee;padding:12px;display:flex;align-items:center;justify-content:center;min-height:220px}
+
