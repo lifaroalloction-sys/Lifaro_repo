@@ -169,16 +169,26 @@ function PostModal({ items, current, onClose, mobileReel=false, reelRef=null }){
             {items.map((it, idx) => (
               <div key={idx} className={`reel-item ${idx === index ? 'active' : ''}`}>
                   {it.type === 'video' ? (
-                    // Prefer HTML5 video only when we have a direct file URL that is likely CORS-friendly.
-                    // Google Drive `uc?export=download` is typically blocked by CORS, so fall back to the preview iframe.
-                    (it.file && !it.file.includes('drive.google.com/uc')) ? (
+                    // Prefer proxied URL from server (it.proxy) when available so the backend can stream
+                    // with proper CORS headers. Otherwise use direct file URL when CORS-friendly.
+                    (it.proxy) ? (
                       <video
                         className="reel-video"
-                        src={it.proxy || it.file}
+                        src={it.proxy}
                         poster={it.thumbnail}
                         loop
                         playsInline
-                        controls
+                        muted
+                        preload="metadata"
+                      />
+                    ) : (it.file && !it.file.includes('drive.google.com/uc')) ? (
+                      <video
+                        className="reel-video"
+                        src={it.file}
+                        poster={it.thumbnail}
+                        loop
+                        playsInline
+                        muted
                         preload="metadata"
                       />
                     ) : (
