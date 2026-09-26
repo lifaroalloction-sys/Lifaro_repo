@@ -26,7 +26,7 @@ body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180de
 .profile-area{max-width:1100px;margin:28px auto;padding:0 24px}
 .profile{display:flex;gap:24px;align-items:flex-start}
 .profile-left{width:220px}
-.avatar{width:200px;height:200px;border-radius:50%;background-image:url('/images/avatar.jpg');background-size:cover;background-position:center;border:6px solid linear-gradient(90deg,var(--accent1),var(--accent2));box-shadow:0 6px 24px rgba(2,6,23,0.6)}
+.avatar{width:200px;height:200px;border-radius:50%;background-image:url('https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=600&q=80');background-size:cover;background-position:center;border:6px solid rgba(255,255,255,0.06);box-shadow:0 6px 24px rgba(2,6,23,0.6)}
 .profile-main{flex:1}
 .profile-head{display:flex;align-items:center;gap:16px}
 .username{margin:0 8px 0 0}
